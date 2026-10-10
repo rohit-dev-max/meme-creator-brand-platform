@@ -1,0 +1,339 @@
+/* ==========================================================================
+   AMBIENT BACKGROUND — tunable variables (edit these, nothing else needed)
+   --------------------------------------------------------------------------
+   --ambient-bg-1 / --ambient-bg-2 .... base page gradient (top → bottom)
+   --ambient-orb-1 … --ambient-orb-5 ... orb colors (aurora / mesh gradient)
+   --ambient-orb-opacity .............. orb intensity (0–1)
+   --ambient-blur ..................... softness of the orb layer (px)
+   --ambient-saturate ................. color richness (e.g. 1.2 = 120%)
+   --ambient-duration ................. base drift cycle length (seconds)
+   --ambient-speed .................... global speed multiplier (0.5 = calm,
+                                        1 = default, 2 = energetic)
+   --ambient-scrim .................... readability overlay over the orbs
+   --ambient-grain-opacity ............ film-grain strength (0–1)
+   --ambient-cursor-color ............. mouse-glow color
+   --ambient-cursor-size .............. mouse-glow diameter (px)
+   --ambient-cursor-opacity ........... mouse-glow strength (0–1)
+   --ambient-blend .................... orb blend mode (screen for dark)
+   ========================================================================== */
+
+:root {
+  --ambient-bg-1: #07070c;
+  --ambient-bg-2: #0b0716;
+
+  --ambient-orb-1: #1d4ed8; /* deep blue */
+  --ambient-orb-2: #7c3aed; /* violet */
+  --ambient-orb-3: #14b8a6; /* teal */
+  --ambient-orb-4: #a3e635; /* arena lime (brand accent) */
+  --ambient-orb-5: #e879f9; /* magenta aurora */
+
+  --ambient-orb-opacity: 0.55;
+  --ambient-blur: 90px;
+  --ambient-saturate: 1.25;
+  --ambient-duration: 42s;
+  --ambient-speed: 1;
+
+  --ambient-scrim: linear-gradient(
+    to bottom,
+    rgba(7, 7, 12, 0.72) 0%,
+    rgba(7, 7, 12, 0.55) 40%,
+    rgba(7, 7, 12, 0.78) 100%
+  );
+  --ambient-grain-opacity: 0.05;
+
+  --ambient-cursor-color: rgba(163, 230, 53, 0.55);
+  --ambient-cursor-size: 520px;
+  --ambient-cursor-opacity: 0.5;
+
+  --ambient-blend: screen;
+}
+
+/* --- Light mode (opt-in via <html data-theme="light"> or theme="light" prop) --- */
+:root[data-theme="light"] {
+  --ambient-bg-1: #f6f7fb;
+  --ambient-bg-2: #e9edf7;
+
+  --ambient-orb-1: #93c5fd; /* soft blue */
+  --ambient-orb-2: #c4b5fd; /* soft violet */
+  --ambient-orb-3: #5eead4; /* soft teal */
+  --ambient-orb-4: #bef264; /* soft lime */
+  --ambient-orb-5: #f0abfc; /* soft magenta */
+
+  --ambient-orb-opacity: 0.6;
+  --ambient-scrim: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.6) 0%,
+    rgba(255, 255, 255, 0.42) 40%,
+    rgba(255, 255, 255, 0.66) 100%
+  );
+  --ambient-grain-opacity: 0.04;
+
+  --ambient-cursor-color: rgba(124, 58, 237, 0.28);
+  --ambient-blend: multiply;
+}
+
+/* Same light palette when driven by the component prop instead of <html> attr */
+.ambient--light {
+  --ambient-bg-1: #f6f7fb;
+  --ambient-bg-2: #e9edf7;
+  --ambient-orb-1: #93c5fd;
+  --ambient-orb-2: #c4b5fd;
+  --ambient-orb-3: #5eead4;
+  --ambient-orb-4: #bef264;
+  --ambient-orb-5: #f0abfc;
+  --ambient-orb-opacity: 0.6;
+  --ambient-scrim: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.6) 0%,
+    rgba(255, 255, 255, 0.42) 40%,
+    rgba(255, 255, 255, 0.66) 100%
+  );
+  --ambient-grain-opacity: 0.04;
+  --ambient-cursor-color: rgba(124, 58, 237, 0.28);
+  --ambient-blend: multiply;
+}
+
+/* ==========================================================================
+   LAYOUT — fixed, full-screen, behind everything, never intercepts clicks
+   ========================================================================== */
+
+.ambient-root {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background: linear-gradient(to bottom, var(--ambient-bg-1), var(--ambient-bg-2));
+  color-scheme: dark light;
+}
+
+.ambient-layer {
+  position: absolute;
+  inset: 0;
+}
+
+/* ==========================================================================
+   ORB LAYER — blur lives on the static parent so children animate with
+   transform/opacity only (GPU-friendly, no per-frame filter repaint)
+   ========================================================================== */
+
+.ambient-orbs {
+  filter: blur(var(--ambient-blur)) saturate(var(--ambient-saturate));
+  mix-blend-mode: var(--ambient-blend);
+  transform: translateZ(0);
+}
+
+.ambient-orb {
+  position: absolute;
+  border-radius: 9999px;
+  opacity: var(--ambient-orb-opacity);
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+/* Soft radial falloff baked into the gradient (no extra blur cost per orb) */
+.ambient-orb-1 {
+  width: 52vmax;
+  height: 52vmax;
+  left: -12vmax;
+  top: -14vmax;
+  background: radial-gradient(circle at center, var(--ambient-orb-1) 0%, transparent 68%);
+  animation: ambient-drift-a calc(var(--ambient-duration) / var(--ambient-speed)) ease-in-out infinite alternate;
+}
+
+.ambient-orb-2 {
+  width: 46vmax;
+  height: 46vmax;
+  right: -10vmax;
+  top: -8vmax;
+  background: radial-gradient(circle at center, var(--ambient-orb-2) 0%, transparent 68%);
+  animation: ambient-drift-b calc(var(--ambient-duration) * 1.25 / var(--ambient-speed)) ease-in-out infinite alternate;
+}
+
+.ambient-orb-3 {
+  width: 44vmax;
+  height: 44vmax;
+  left: 22vw;
+  bottom: -16vmax;
+  background: radial-gradient(circle at center, var(--ambient-orb-3) 0%, transparent 68%);
+  animation: ambient-drift-c calc(var(--ambient-duration) * 1.1 / var(--ambient-speed)) ease-in-out infinite alternate;
+}
+
+.ambient-orb-4 {
+  width: 30vmax;
+  height: 30vmax;
+  right: 16vw;
+  bottom: 8vh;
+  background: radial-gradient(circle at center, var(--ambient-orb-4) 0%, transparent 66%);
+  animation: ambient-drift-a calc(var(--ambient-duration) * 0.8 / var(--ambient-speed)) ease-in-out infinite alternate-reverse;
+}
+
+.ambient-orb-5 {
+  width: 26vmax;
+  height: 26vmax;
+  left: 8vw;
+  top: 34vh;
+  background: radial-gradient(circle at center, var(--ambient-orb-5) 0%, transparent 66%);
+  animation: ambient-drift-b calc(var(--ambient-duration) * 0.9 / var(--ambient-speed)) ease-in-out infinite alternate-reverse;
+}
+
+/* ==========================================================================
+   AURORA RIBBON — a slow diagonal wash for the northern-lights feel
+   (transform + opacity only)
+   ========================================================================== */
+
+.ambient-aurora {
+  background: linear-gradient(
+    115deg,
+    transparent 10%,
+    var(--ambient-orb-2) 34%,
+    var(--ambient-orb-3) 50%,
+    var(--ambient-orb-4) 64%,
+    transparent 88%
+  );
+  opacity: 0.16;
+  filter: blur(60px);
+  transform: translateZ(0) rotate(-4deg) scale(1.2);
+  will-change: transform, opacity;
+  mix-blend-mode: var(--ambient-blend);
+  animation: ambient-aurora calc(var(--ambient-duration) * 1.6 / var(--ambient-speed)) ease-in-out infinite alternate;
+}
+
+/* ==========================================================================
+   CURSOR GLOW — positioned by JS (rAF lerp), desktop / fine-pointer only
+   ========================================================================== */
+
+.ambient-cursor {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--ambient-cursor-size);
+  height: var(--ambient-cursor-size);
+  border-radius: 9999px;
+  background: radial-gradient(circle at center, var(--ambient-cursor-color) 0%, transparent 62%);
+  opacity: 0;
+  transition: opacity 0.8s ease;
+  will-change: transform;
+  mix-blend-mode: var(--ambient-blend);
+}
+
+/* Never show the cursor glow on touch devices */
+@media (pointer: coarse) {
+  .ambient-cursor {
+    display: none;
+  }
+}
+
+/* ==========================================================================
+   READABILITY OVERLAYS — scrim keeps text contrast, grain adds depth
+   ========================================================================== */
+
+.ambient-scrim {
+  background: var(--ambient-scrim);
+}
+
+.ambient-grain {
+  opacity: var(--ambient-grain-opacity);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 160px 160px;
+}
+
+/* ==========================================================================
+   KEYFRAMES — transform & opacity only (compositor-friendly)
+   ========================================================================== */
+
+@keyframes ambient-drift-a {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(9vmax, 6vmax, 0) scale(1.18);
+  }
+  100% {
+    transform: translate3d(-6vmax, 11vmax, 0) scale(0.94);
+  }
+}
+
+@keyframes ambient-drift-b {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1.05);
+  }
+  50% {
+    transform: translate3d(-10vmax, 7vmax, 0) scale(0.9);
+  }
+  100% {
+    transform: translate3d(5vmax, -6vmax, 0) scale(1.16);
+  }
+}
+
+@keyframes ambient-drift-c {
+  0% {
+    transform: translate3d(0, 0, 0) scale(0.95);
+  }
+  50% {
+    transform: translate3d(7vmax, -8vmax, 0) scale(1.12);
+  }
+  100% {
+    transform: translate3d(-8vmax, -3vmax, 0) scale(1.02);
+  }
+}
+
+@keyframes ambient-aurora {
+  0% {
+    transform: translate3d(-6vw, 0, 0) rotate(-4deg) scale(1.2);
+    opacity: 0.1;
+  }
+  100% {
+    transform: translate3d(6vw, -4vh, 0) rotate(-2deg) scale(1.32);
+    opacity: 0.22;
+  }
+}
+
+/* ==========================================================================
+   MOBILE — fewer orbs, less blur, shorter paint cost
+   ========================================================================== */
+
+@media (max-width: 768px) {
+  :root {
+    --ambient-blur: 60px;
+  }
+  .ambient-orb-4,
+  .ambient-orb-5 {
+    display: none;
+  }
+  .ambient-aurora {
+    filter: blur(40px);
+  }
+}
+
+/* ==========================================================================
+   REDUCED MOTION — freeze into a calm static gradient, hide cursor glow
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .ambient-orb,
+  .ambient-aurora {
+    animation: none;
+  }
+  .ambient-orb-1 {
+    transform: translate3d(4vmax, 3vmax, 0) scale(1.08);
+  }
+  .ambient-orb-2 {
+    transform: translate3d(-4vmax, 2vmax, 0) scale(1);
+  }
+  .ambient-orb-3 {
+    transform: translate3d(2vmax, -3vmax, 0) scale(1.05);
+  }
+  .ambient-orb-4 {
+    transform: scale(1);
+  }
+  .ambient-orb-5 {
+    transform: scale(1);
+  }
+  .ambient-aurora {
+    opacity: 0.14;
+  }
+  .ambient-cursor {
+    display: none;
+  }
+}
